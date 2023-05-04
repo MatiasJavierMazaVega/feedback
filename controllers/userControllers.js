@@ -1,6 +1,7 @@
 const { validationResult } = require('express-validator') 
 const Usuario = require('../models/userModel')
 const bcrypt = require('bcrypt')
+const jwt = require('../middlewares/generarToken')
 
 
 
@@ -16,6 +17,9 @@ const paginaError = (req, res) => {
     res.status(500).send(`<h1>Todo mal!!</h1>`)
 }
 
+const paginaLogin = (req, res) => {
+    res.status(500).send(`<h1>Pagina para el login</h1>`)
+}
 
 const registrarUsuario = async (req, res) => {
 
@@ -58,6 +62,9 @@ const errores = validationResult(req);
     //insertamos en la db el nuevo usuario
     nuevoUsuario.save();
 
+    let token = await jwt.generarJsonWebToken(usuarioExiste);
+    console.log(token);
+
     //respondemos a la peticion del cliente si todo va bien
     res.status(200).end('Tus datos fueron recibidos y guardados en la DB')
 
@@ -69,6 +76,42 @@ const errores = validationResult(req);
     }
 
     
+}
+
+const loginUsuario = async (req, res) => {
+    const { email, password } = req.body;
+    console.log(`${email} - ${password}`);
+    try { let usuarioExiste = await Usuario.findOne({email})
+    console.log(usuarioExiste.email);
+    if (!usuarioExiste) {
+        return res.status(400).json({
+            errores: 'El mail no esta registrado'
+        })
+    }
+    console.log(usuarioExiste.password);
+
+    const validarPassword = bcrypt.compareSync(password, usuarioExiste.password);
+    
+    console.log(validarPassword);
+
+    console.log(usuarioExiste);
+
+
+
+    if (validarPassword) {
+        return res.status(400).json({
+            Administracion: 'Bienvenido Administrador'
+        })
+    } else{
+        return res.status(400).json({
+            Error: 'Email o password incorrecto'
+        }) 
+    }
+    } catch (error) {
+        return res.status(400).json({
+            Error: 'Email o password incorrecto'
+        })
+    }
 }
 
 
@@ -95,6 +138,8 @@ const paginaPrueba = (req, res) => {
 module.exports = {
     paginaPrincipal,
     paginaError,
+    paginaLogin,
+    loginUsuario,
     registrarUsuario,
     paginaPrueba
 }
